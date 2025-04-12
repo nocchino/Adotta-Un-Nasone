@@ -108,8 +108,8 @@
         const { utente, data } = adottatoInfo;
         const dataFormattata = data.toDate().toLocaleDateString('it-IT'); // Formato italiano
         html += `
-          🟡 <strong>Adottato da:</strong> ${utente}<br>
-          📅 <strong>Data adozione:</strong> ${dataFormattata}
+          🟡 <strong>Adopted by:</strong> ${utente}<br>
+          📅 <strong>Adoption Date:</strong> ${dataFormattata}
         `;
       } else {
         html += `
@@ -123,6 +123,7 @@
     }
 
     // NUOVA/MODIFICATA: Funzione per gestire l'adozione (interagisce con Firestore)
+    
     async function adottaNasone(id) {
         const nasoneRef = doc(db, "adozioni", id.toString()); // Crea riferimento al documento specifico
 
@@ -177,6 +178,22 @@
             alert("Si è verificato un errore durante l'adozione. Riprova.");
         }
     }
+
+    async function caricaNasoniDaFirestore() {
+      const nasoniCollection = collection(db, "nasoni");
+      const snapshot = await getDocs(nasoniCollection);
+  
+      nasoni = [];
+      snapshot.forEach((doc) => {
+      nasoni.push({
+        id: doc.id,
+        ...doc.data()
+    });
+  });
+  
+  console.log(`Caricati ${nasoni.length} nasoni da Firestore`);
+  creaNasoniSullaMappa();
+}
 
     // --- Creazione Marker e Ascolto Aggiornamenti ---
 

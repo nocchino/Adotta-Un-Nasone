@@ -77,20 +77,19 @@
       { id: 1, nome: "Nasone 1 - Colosseo", lat: 41.8902, lon: 12.4922 },
       { id: 2, nome: "Nasone 2 - Trastevere", lat: 41.8894, lon: 12.4708 },
       { id: 3, nome: "Nasone 3 - Villa Borghese", lat: 41.9142, lon: 12.4923 },
-      { id: 4, nome: "Nasone 4", lat: 41.56516, lon: 12.28301} //41°56'51.6"N 12°28'30.1"E
+      { id: 4, nome: "Nasone 4", lat: 41.5651, lon: 12.2830} //41°56'51.6"N 12°28'30.1"E
 
     ];
 
     const markers = {}; // Contiene i riferimenti ai marker sulla mappa
     let adozioniAttuali = {}; // Contiene lo stato attuale delle adozioni da Firestore
 
-    // --- Funzioni per Popup e Adozioni (Modificate per Firestore) ---
+    // --- Funzioni per Popup e Adozioni---
 
-    // MODIFICATA: Crea il contenuto HTML per il popup
     // Ora accetta i dati delle adozioni come parametro
     function creaPopupContent(nasone, adozioniData) {
       const adottatoInfo = adozioniData[nasone.id];
-      let html = `<div class="popup-content"><strong>${nasone.nome}</strong>`; // Aggiunta classe per stile
+      let html = `<div class="popup-content"><strong>${nasone.nome}</strong>`; 
 
       let scaduto = false;
       if (adottatoInfo && adottatoInfo.data) {
@@ -100,7 +99,7 @@
 
           if (giorniPassati > 30) {
               scaduto = true;
-              // Nota: Non eliminiamo da Firestore qui, solo per la visualizzazione
+          
               // Potremmo implementare una funzione Cloud per pulire o farlo in adottaNasone
           }
       }

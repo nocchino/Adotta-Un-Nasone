@@ -16,7 +16,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Leggi il file nasoni.json
-const nasoni = JSON.parse(fs.readFileSync('nasoni.json', 'utf8'));
+const nasoni = JSON.parse(fs.readFileSync('"C:/Users/nicco/Desktop/nasoni.json"', 'utf8'));
 
 async function uploadNasoni() {
   // Usa batch write per efficienza

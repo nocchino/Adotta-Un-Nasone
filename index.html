@@ -178,7 +178,7 @@
             alert("Si è verificato un errore durante l'adozione. Riprova.");
         }
     }
-
+    //----------------------------------------------------------//
     async function caricaNasoniDaFirestore() {
       const nasoniCollection = collection(db, "nasoni");
       const snapshot = await getDocs(nasoniCollection);

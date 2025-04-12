@@ -74,7 +74,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // --- Dati Nasoni (come prima) ---
+    // --- Dati Nasoni 
     const nasoni = [
       { id: 1, nome: "Nasone 1 - Colosseo", lat: 41.8902, lon: 12.4922 },
       { id: 2, nome: "Nasone 2 - Trastevere", lat: 41.8894, lon: 12.4708 },
@@ -115,9 +115,9 @@
         `;
       } else {
         html += `
-          🟢 <strong>Disponibile!</strong><br>
+          🟢 <strong>Available!</strong><br>
           ${scaduto ? '<i>(Adozione precedente scaduta)</i><br>' : ''}
-          <button class="adopt-btn" data-nasone-id="${nasone.id}">Adotta questo nasone</button>
+          <button class="adopt-btn" data-nasone-id="${nasone.id}">Adopt</button>
         `; // Usiamo data-* attribute invece di id
       }
       html += `</div>`;

@@ -224,6 +224,40 @@
         }
     });
 
+
+    // Aggiungi questa funzione al tuo codice esistente
+  async function pulisciAdozioniScadute() {
+  console.log("Controllo adozioni scadute...");
+  
+  try {
+    const snapshot = await getDocs(adozioniCollection);
+    const batch = writeBatch(db);
+    let count = 0;
+    
+    snapshot.forEach(doc => {
+      const data = doc.data().data.toDate();
+      const giorniPassati = (new Date() - data) / (1000 * 60 * 60 * 24);
+      
+      if (giorniPassati > 30) {
+        batch.delete(doc.ref);
+        count++;
+      }
+    });
+    
+    if (count > 0) {
+      await batch.commit();
+      console.log(`Rimosse ${count} adozioni scadute`);
+    } else {
+      console.log("Nessuna adozione scaduta trovata");
+    }
+  } catch (error) {
+    console.error("Errore durante la pulizia delle adozioni scadute:", error);
+  }
+}
+
+// Chiamala all'avvio dell'app
+window.addEventListener('load', pulisciAdozioniScadute);
+
   </script>
 </body>
 </html>

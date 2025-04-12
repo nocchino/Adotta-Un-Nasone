@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Adotta Un Nasone</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      background-color: #3399ff;
+      color: white;
+      padding: 1rem;
+      margin: 0;
+      text-align: center;
+    }
+    #map {
+      height: calc(100vh - 60px); /* Altezza meno l'header circa */
+      width: 100%;
+    }
+    .adopt-btn {
+      background-color: #28a745;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      margin-top: 5px;
+      cursor: pointer;
+    }
+    .popup-content {
+        font-size: 14px; /* Rende il testo del popup leggibile */
+        line-height: 1.4;
+    }
+    .popup-content strong {
+        display: block; /* Nome nasone a capo */
+        margin-bottom: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Adotta Un Nasone</h1>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script type="module">
+    // NUOVO: Importa le funzioni necessarie da Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"; // Usa versione più recente se disponibile
+    import { getFirestore, collection, doc, getDoc, setDoc, onSnapshot, serverTimestamp, writeBatch, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // --- Configurazione Firebase ---
+    // NUOVO: INCOLLA QUI IL TUO OGGETTO firebaseConfig che hai copiato prima
+    const firebaseConfig = {
+    apiKey: "AIzaSyD23PjywD7kOgA2zLbH-tDvz1XAqKp8AgM",
+    authDomain: "nasone-project.firebaseapp.com",
+    projectId: "nasone-project",
+    storageBucket: "nasone-project.firebasestorage.app",
+    messagingSenderId: "841489834300",
+    appId: "1:841489834300:web:d6ada8d7ab627f559a3e39"
+    };
+    // -------------------------------
+
+    // NUOVO: Inizializza Firebase e ottieni riferimento a Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const adozioniCollection = collection(db, "adozioni"); // Nome della "tabella" su Firestore
+
+    // --- Mappa Leaflet (come prima) ---
+    const map = L.map('map').setView([41.8928, 12.4825], 13); // Roma
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // --- Dati Nasoni (come prima) ---
+    const nasoni = [
+      { id: 1, nome: "Nasone 1 - Colosseo", lat: 41.8902, lon: 12.4922 },
+      { id: 2, nome: "Nasone 2 - Trastevere", lat: 41.8894, lon: 12.4708 },
+      { id: 3, nome: "Nasone 3 - Villa Borghese", lat: 41.9142, lon: 12.4923 }
+      // Aggiungi qui altri nasoni se vuoi
+    ];
+
+    const markers = {}; // Contiene i riferimenti ai marker sulla mappa
+    let adozioniAttuali = {}; // Contiene lo stato attuale delle adozioni da Firestore
+
+    // --- Funzioni per Popup e Adozioni (Modificate per Firestore) ---
+
+    // MODIFICATA: Crea il contenuto HTML per il popup
+    // Ora accetta i dati delle adozioni come parametro
+    function creaPopupContent(nasone, adozioniData) {
+      const adottatoInfo = adozioniData[nasone.id];
+      let html = `<div class="popup-content"><strong>${nasone.nome}</strong>`; // Aggiunta classe per stile
+
+      let scaduto = false;
+      if (adottatoInfo && adottatoInfo.data) {
+          // Firestore salva Timestamp, converti in Date JS
+          const dataAdozione = adottatoInfo.data.toDate();
+          const giorniPassati = (new Date() - dataAdozione) / (1000 * 60 * 60 * 24);
+
+          if (giorniPassati > 30) {
+              scaduto = true;
+              // Nota: Non eliminiamo da Firestore qui, solo per la visualizzazione
+              // Potremmo implementare una funzione Cloud per pulire o farlo in adottaNasone
+          }
+      }
+
+      if (adottatoInfo && !scaduto) {
+        const { utente, data } = adottatoInfo;
+        const dataFormattata = data.toDate().toLocaleDateString('it-IT'); // Formato italiano
+        html += `
+          🟡 <strong>Adottato da:</strong> ${utente}<br>
+          📅 <strong>Data adozione:</strong> ${dataFormattata}
+        `;
+      } else {
+        html += `
+          🟢 <strong>Disponibile!</strong><br>
+          ${scaduto ? '<i>(Adozione precedente scaduta)</i><br>' : ''}
+          <button class="adopt-btn" data-nasone-id="${nasone.id}">Adotta questo nasone</button>
+        `; // Usiamo data-* attribute invece di id
+      }
+      html += `</div>`;
+      return html;
+    }
+
+    // NUOVA/MODIFICATA: Funzione per gestire l'adozione (interagisce con Firestore)
+    async function adottaNasone(id) {
+        const nasoneRef = doc(db, "adozioni", id.toString()); // Crea riferimento al documento specifico
+
+        try {
+            const docSnap = await getDoc(nasoneRef); // Controlla lo stato attuale su Firestore
+            const datiAttuali = docSnap.data();
+
+            let puoAdottare = false;
+            if (!docSnap.exists()) {
+                puoAdottare = true; // Non esiste, quindi libero
+            } else if (datiAttuali && datiAttuali.data) {
+                // Esiste, controlla se è scaduto
+                const dataAdozione = datiAttuali.data.toDate();
+                const giorniPassati = (new Date() - dataAdozione) / (1000 * 60 * 60 * 24);
+                if (giorniPassati > 30) {
+                    puoAdottare = true; // È scaduto
+                }
+            }
+
+            if (!puoAdottare) {
+                alert("Ops! Qualcun altro ha appena adottato questo nasone o l'adozione non è ancora scaduta. Prova un altro!");
+                return; // Esce dalla funzione
+            }
+
+            // Se è arrivato qui, può adottare
+            const utente = prompt("Inserisci il tuo nome per adottare questo nasone (max 50 caratteri):");
+            if (!utente || utente.trim() === "") {
+                alert("Nome non valido.");
+                return;
+            }
+            if (utente.length > 50) {
+                alert("Nome troppo lungo (max 50 caratteri).");
+                return;
+            }
+
+            // Prepara i dati da salvare
+            const datiNuovaAdozione = {
+                utente: utente.trim(),
+                data: serverTimestamp() // Usa il timestamp del server Firestore
+            };
+
+            // Salva su Firestore
+            await setDoc(nasoneRef, datiNuovaAdozione);
+
+            // Il listener onSnapshot aggiornerà automaticamente il popup,
+            // ma possiamo dare un feedback immediato se vogliamo
+            console.log(`Nasone ${id} adottato da ${utente}!`);
+            // alert(`Complimenti, hai adottato il Nasone ${id}!`); // Forse un po' invasivo
+
+        } catch (error) {
+            console.error("Errore durante l'adozione: ", error);
+            alert("Si è verificato un errore durante l'adozione. Riprova.");
+        }
+    }
+
+    // --- Creazione Marker e Ascolto Aggiornamenti ---
+
+    // 1. Crea tutti i marker inizialmente (senza popup complesso)
+    nasoni.forEach(nasone => {
+      const marker = L.marker([nasone.lat, nasone.lon]).addTo(map);
+      marker.bindPopup(`<strong>${nasone.nome}</strong><br>Caricamento...`); // Popup temporaneo
+      markers[nasone.id] = marker;
+    });
+
+    // 2. NUOVO: Ascolta le modifiche nella collezione 'adozioni' in tempo reale
+    onSnapshot(adozioniCollection, (snapshot) => {
+      console.log("Dati adozioni aggiornati da Firestore!");
+      const nuoveAdozioni = {};
+      snapshot.forEach((doc) => {
+        // Costruisci l'oggetto adozioniAttuali dai dati Firestore
+        nuoveAdozioni[doc.id] = doc.data();
+      });
+      adozioniAttuali = nuoveAdozioni; // Aggiorna lo stato globale
+
+      // Aggiorna tutti i popup dei marker con i nuovi dati
+      nasoni.forEach(nasone => {
+        const marker = markers[nasone.id];
+        if (marker) {
+          const popupContent = creaPopupContent(nasone, adozioniAttuali);
+          marker.setPopupContent(popupContent);
+        }
+      });
+    });
+
+    // 3. NUOVO: Gestione click sul pulsante "Adotta" (delegata alla mappa)
+    // Questo è più efficiente che aggiungere un listener per ogni bottone
+    map.on('popupopen', function (e) {
+        const popupNode = e.popup._contentNode; // Nodo DOM del popup
+        const adoptButton = popupNode.querySelector('.adopt-btn');
+
+        if (adoptButton) {
+            // Usa un listener una tantum per evitare aggiunte multiple
+            adoptButton.onclick = function() {
+                 const nasoneId = parseInt(this.getAttribute('data-nasone-id'));
+                 adottaNasone(nasoneId);
+                 // Chiudi il popup dopo il tentativo di adozione
+                 e.sourceTarget.closePopup();
+            }
+        }
+    });
+
+  </script>
+</body>
+</html>

@@ -73,13 +73,63 @@
     }).addTo(map);
 
     // --- Dati Nasoni 
-    const nasoni = [
-      { id: 1, nome: "Nasone 1 - Colosseo", lat: 41.8902, lon: 12.4922 },
-      { id: 2, nome: "Nasone 2 - Trastevere", lat: 41.8894, lon: 12.4708 },
-      { id: 3, nome: "Nasone 3 - Villa Borghese", lat: 41.9142, lon: 12.4923 },
-      { id: 4, nome: "Nasone 4 - Via Flaminia", lat: 41.947711, lon: 12.475158},
+    let nasoni = [];
 
-    ];
+
+    
+    
+// Funzione per caricare il JSON
+async function caricaNasoni() {
+  try {
+    const response = await fetch('nasoni.json');
+    if (!response.ok) {
+      throw new Error('Errore nel caricamento del file nasoni.json');
+    }
+    nasoni = await response.json();
+    console.log(`Caricati ${nasoni.length} nasoni dal file JSON`);
+    
+    // Crea i marker sulla mappa
+    creaNasoniSullaMappa();
+  } catch (error) {
+    console.error("Errore nel caricamento:", error);
+  }
+}
+
+// Funzione per creare i marker
+function creaNasoniSullaMappa() {
+  nasoni.forEach(nasone => {
+    const marker = L.marker([nasone.lat, nasone.lon]).addTo(map);
+    marker.bindPopup(`<strong>${nasone.nome}</strong><br>Caricamento...`);
+    markers[nasone.id] = marker;
+  });
+  
+  // Attiva l'ascolto delle adozioni solo dopo aver creato tutti i marker
+  ascoltaAdozioni();
+}
+
+// Funzione per ascoltare le adozioni (codice che già hai)
+function ascoltaAdozioni() {
+  onSnapshot(adozioniCollection, (snapshot) => {
+    console.log("Dati adozioni aggiornati da Firestore!");
+    const nuoveAdozioni = {};
+    snapshot.forEach((doc) => {
+      nuoveAdozioni[doc.id] = doc.data();
+    });
+    adozioniAttuali = nuoveAdozioni;
+
+    nasoni.forEach(nasone => {
+      const marker = markers[nasone.id];
+      if (marker) {
+        const popupContent = creaPopupContent(nasone, adozioniAttuali);
+        marker.setPopupContent(popupContent);
+      }
+    });
+  });
+}
+
+// Chiama la funzione di caricamento all'avvio
+window.addEventListener('load', caricaNasoni);
+    
 
     const markers = {}; // Contiene i riferimenti ai marker sulla mappa
     let adozioniAttuali = {}; // Contiene lo stato attuale delle adozioni da Firestore
@@ -178,22 +228,8 @@
             alert("Si è verificato un errore durante l'adozione. Riprova.");
         }
     }
-    //----------------------------------------------------------//
-    async function caricaNasoniDaFirestore() {
-      const nasoniCollection = collection(db, "nasoni");
-      const snapshot = await getDocs(nasoniCollection);
-  
-      nasoni = [];
-      snapshot.forEach((doc) => {
-      nasoni.push({
-        id: doc.id,
-        ...doc.data()
-    });
-  });
-  
-  console.log(`Caricati ${nasoni.length} nasoni da Firestore`);
-  creaNasoniSullaMappa();
-}
+
+
 
     // --- Creazione Marker e Ascolto Aggiornamenti ---
 

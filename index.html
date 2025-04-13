@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Adotta Un Nasone</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  
   <style>
     body {
       margin: 0;
@@ -45,6 +48,7 @@
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -74,7 +78,7 @@
 
     // --- Dati Nasoni 
     let nasoni = [];
-
+    const markerCluster = L.markerClusterGroup();
 
     
     
@@ -98,13 +102,14 @@ async function caricaNasoni() {
 // Funzione per creare i marker
 function creaNasoniSullaMappa() {
   nasoni.forEach(nasone => {
-    const marker = L.marker([nasone.lat, nasone.lon]).addTo(map);
-    marker.bindPopup(`<strong>${nasone.nome}</strong><br>Caricamento...`);
-    markers[nasone.id] = marker;
-  });
+  const marker = L.marker([nasone.lat, nasone.lon]);  // Rimuovi .addTo(map)
+  marker.bindPopup(`<strong>${nasone.nome}</strong><br>Caricamento...`);
+  markers[nasone.id] = marker;
+  markerCluster.addLayer(marker);  // Aggiungi il marker al cluster
+});
   
   // Attiva l'ascolto delle adozioni solo dopo aver creato tutti i marker
-  ascoltaAdozioni();
+  map.addLayer(markerCluster);
 }
 
 // Funzione per ascoltare le adozioni (codice che già hai)

@@ -15,6 +15,8 @@ Adotta un nasone è una web-app che ti permette di adottare **virtualmente** il 
 
 [CLICCA QUI PER ADOTTARE IL TUO NASONE PREFERITO](https://nocchino.github.io/Adotta-Un-Nasone/)
 
+*se il sito è bloccato su caricamento refreshare la pagina*
+
 ## Funzionalità 
 **Mappa Interattiva.**</br>
 **Stato Adozione.**</br>

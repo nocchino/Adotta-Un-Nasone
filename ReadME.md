@@ -28,5 +28,3 @@ Adotta un nasone è una web-app che ti permette di adottare **virtualmente** il 
 *Le fontanelle "Nasoni" sono e rimangono **beni di proprietà pubblica**, la cui gestione e manutenzione sono di competenza delle autorità e/o delle aziende municipalizzate preposte.*
 
 *Questo progetto web è un'iniziativa **indipendente e non ufficiale**, sviluppata per scopi dimostrativi, educativi o ricreativi. **Non esiste alcuna affiliazione, approvazione, sponsorizzazione o partnership ufficiale** tra questo progetto e qualsivoglia ente pubblico, azienda di servizi pubblici o altra organizzazione responsabile della gestione delle fontanelle Nasoni.*
-
-link: https://nocchino.github.io/Adotta-Un-Nasone/
